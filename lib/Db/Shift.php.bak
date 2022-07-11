@@ -1,0 +1,38 @@
+<?php
+namespace OCA\NotesTutorial\Db;
+
+use JsonSerializable;
+
+use OCP\AppFramework\Db\Entity;
+
+class Shift extends Entity implements JsonSerializable {
+
+    protected $title;
+    protected $start;
+    protected $end;
+    protected $comment;
+    protected $userId;
+    protected $createdOn;
+    protected $createdBy;
+    protected $updatedOn;
+    protected $updatedBy;
+
+    public function __construct() {
+        $this->addType('id','integer');
+    }
+
+    public function jsonSerialize() {
+        return [
+            'id' => $this->id,
+            'title' => $this->title,
+            'start' => $this->start,
+            'end' => $this->end,
+            'comment' => $this->comment,
+            'userId' => $this->userId,
+            'createdOn' => $this->createdOn,
+            'createdBy' => $this->createdBy,
+            'updatedOn' => $this->updatedOn,
+            'updatedBy' => $this->updatedBy
+        ];
+    }
+}

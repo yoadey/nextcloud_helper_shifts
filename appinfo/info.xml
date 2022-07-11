@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<info xmlns:xsi= "http://www.w3.org/2001/XMLSchema-instance"
+      xsi:noNamespaceSchemaLocation="https://apps.nextcloud.com/schema/apps/info.xsd">
+    <id>helpershifts</id>
+    <name>Helpershifts</name>
+    <summary>Plugin zur Organisation von Helpershifts in einem Verein</summary>
+    <description><![CDATA[Plugin zur Organisation von Helpershifts in einem Verein.
+
+- Veranstaltungen/Aufgaben, bei denen Helfer benötigt werden können angezeigt werden
+- Anzahl der benötigten Helfer können eingestellt werden
+- User können sich als Helfer eintragen
+- Übersicht über fehlende Helfer bei einer Veranstaltung/Aufgabe
+- Übersicht über die Anzahl der geleisteten Helferstunden nach Helfern und Monat/Jahr]]></description>
+    <version>0.0.1</version>
+    <licence>agpl</licence>
+    <author mail="stefan@may-ac.de" homepage="https://github.com/yoadey/nextcloud_helper_shifts">Stefan May</author>
+    <namespace>Helpershifts</namespace>
+    <category>organization</category>
+    <bugs>https://github.com/yoadey/nextcloud_helper_shifts/issues</bugs>
+    <dependencies>
+        <nextcloud min-version="24" max-version="24"/>
+    </dependencies>
+    <navigations>
+        <navigation>
+            <name>Helpershifts</name>
+            <route>helpershifts.page.index</route>
+        </navigation>
+    </navigations>
+</info>
