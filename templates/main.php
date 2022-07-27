@@ -1,1 +1,4 @@
-<div id="content"></div>
+<?php
+
+script('helpershifts', 'helpershifts-main');
+style('helpershifts', 'helpershifts');

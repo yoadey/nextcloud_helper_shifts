@@ -1,234 +1,143 @@
 <template>
-	<div id="content" class="app-notestutorial">
-		<AppNavigation>
-			<AppNavigationNew v-if="!loading"
-				:text="t('notestutorial', 'New note')"
-				:disabled="false"
-				button-id="new-notestutorial-button"
-				button-class="icon-add"
-				@click="newNote" />
-			<ul>
-				<AppNavigationItem v-for="note in notes"
-					:key="note.id"
-					:title="note.title ? note.title : t('notestutorial', 'New note')"
-					:class="{active: currentNoteId === note.id}"
-					@click="openNote(note)">
-					<template slot="actions">
-						<ActionButton v-if="note.id === -1"
-							icon="icon-close"
-							@click="cancelNewNote(note)">
-							{{ t('notestutorial', 'Cancel note creation') }}
-						</ActionButton>
-						<ActionButton v-else
-							icon="icon-delete"
-							@click="deleteNote(note)">
-							{{ t('notestutorial', 'Delete note') }}
-						</ActionButton>
-					</template>
-				</AppNavigationItem>
-			</ul>
+	<Content app-name="helpershifts" :content-class="{loading: loading.helpershifts}">
+		<AppNavigation :class="{loading: loading.helpershifts, 'icon-error': error}">
+			<AppNavigationNew
+				v-show=true
+				:text="t('helpershifts', 'Helpershifts')"
+				button-id="helpershists"
+				:button-class="['icon-add', { loading: loading.create }]"
+				@click="onHelpershifts"
+			/>
+
+			<template #footer>
+				<AppSettings @reload="reloadHelpershifts" />
+			</template>
 		</AppNavigation>
-		<AppContent>
-			<div v-if="currentNote">
-				<input ref="title"
-					v-model="currentNote.title"
-					type="text"
-					:disabled="updating">
-				<textarea ref="content" v-model="currentNote.content" :disabled="updating" />
-				<input type="button"
-					class="primary"
-					:value="t('notestutorial', 'Save')"
-					:disabled="updating || !savePossible"
-					@click="saveNote">
-			</div>
-			<div v-else id="emptycontent">
-				<div class="icon-file" />
-				<h2>{{ t('notestutorial', 'Create a note to get started') }}</h2>
+
+		<AppContent v-if="error">
+			<div style="margin: 2em;">
+				<h2>{{ t('helpershifts', 'Error') }}</h2>
+				<p>{{ error }}</p>
+				<p>{{ t('helpershifts', 'Please see Nextcloud server log for details.') }}</p>
 			</div>
 		</AppContent>
-	</div>
+		<router-view v-else />
+
+		<router-view name="sidebar" />
+	</Content>
 </template>
 
 <script>
-import ActionButton from '@nextcloud/vue/dist/Components/ActionButton'
-import AppContent from '@nextcloud/vue/dist/Components/AppContent'
-import AppNavigation from '@nextcloud/vue/dist/Components/AppNavigation'
-import AppNavigationItem from '@nextcloud/vue/dist/Components/AppNavigationItem'
-import AppNavigationNew from '@nextcloud/vue/dist/Components/AppNavigationNew'
-
+import {
+	AppContent,
+	AppNavigation,
+	AppNavigationNew,
+	Content,
+} from '@nextcloud/vue'
+import { showSuccess, TOAST_UNDO_TIMEOUT, TOAST_PERMANENT_TIMEOUT } from '@nextcloud/dialogs'
 import '@nextcloud/dialogs/styles/toast.scss'
-import { generateUrl } from '@nextcloud/router'
-import { showError, showSuccess } from '@nextcloud/dialogs'
-import axios from '@nextcloud/axios'
+
+import { config } from './config.js'
+import { fetchHelpershifts, helpershiftExists, createHelpershift, undoDeleteHelpershift } from './HelpershiftsService.js'
+import AppSettings from './components/AppSettings.vue'
+import store from './store.js'
 
 export default {
 	name: 'App',
+
 	components: {
-		ActionButton,
 		AppContent,
 		AppNavigation,
-		AppNavigationItem,
 		AppNavigationNew,
+		AppSettings,
+		Content,
 	},
+
 	data() {
 		return {
-			notes: [],
-			currentNoteId: null,
-			updating: false,
-			loading: true,
+			filter: {
+				category: null,
+			},
+			loading: {
+				helpershifts: true,
+			},
+			error: false,
+			undoNotification: null,
+			refresh: 30,
+			refreshAfterHidden: 5,
 		}
-	},
-	computed: {
-		/**
-		 * Return the currently selected note object
-		 * @returns {Object|null}
-		 */
-		currentNote() {
-			if (this.currentNoteId === null) {
-				return null
-			}
-			return this.notes.find((note) => note.id === this.currentNoteId)
-		},
-
-		/**
-		 * Returns true if a note is selected and its title is not empty
-		 * @returns {Boolean}
-		 */
-		savePossible() {
-			return this.currentNote && this.currentNote.title !== ''
-		},
-	},
-	/**
-	 * Fetch list of notes when the component is loaded
-	 */
-	async mounted() {
-		try {
-			const response = await axios.get(generateUrl('/apps/notestutorial/notes'))
-			this.notes = response.data
-		} catch (e) {
-			console.error(e)
-			showError(t('notestutorial', 'Could not fetch notes'))
-		}
-		this.loading = false
 	},
 
 	methods: {
-		/**
-		 * Create a new note and focus the note content field automatically
-		 * @param {Object} note Note object
-		 */
-		openNote(note) {
-			if (this.updating) {
-				return
-			}
-			this.currentNoteId = note.id
-			this.$nextTick(() => {
-				this.$refs.content.focus()
-			})
+		loadHelpershifts() {
+			fetchHelpershifts()
+				.then(data => {
+					if (data === null) {
+						// nothing changed
+						return
+					}
+					if (data.helpershifts !== null) {
+						this.error = false
+					//	this.routeDefault(data.lastViewedHelpershift)
+					} else if (this.loading.helpershifts) {
+						// only show error state if not loading in background
+						this.error = data.errorMessage
+					} else {
+						console.error('Server error while updating list of helpershifts: ' + data.errorMessage)
+					}
+				})
+				.catch(() => {
+					// only show error state if not loading in background
+					if (this.loading.helpershifts) {
+						this.error = true
+					}
+				})
+				.then(() => {
+					this.loading.helpershifts = false
+					this.startRefreshTimer(config.interval.helpershifts.refresh)
+				})
 		},
-		/**
-		 * Action tiggered when clicking the save button
-		 * create a new note or save
-		 */
-		saveNote() {
-			if (this.currentNoteId === -1) {
-				this.createNote(this.currentNote)
+
+		startRefreshTimer(seconds) {
+			if (this.refreshTimer === null && document.visibilityState === 'visible') {
+				this.refreshTimer = setTimeout(() => {
+					this.refreshTimer = null
+					this.loadHeleprshifts()
+				}, seconds * 1000)
+			}
+		},
+
+		stopRefreshTimer() {
+			if (this.refreshTimer !== null) {
+				clearTimeout(this.refreshTimer)
+				this.refreshTimer = null
+			}
+		},
+
+		onVisibilityChange() {
+			if (document.visibilityState === 'visible') {
+				this.startRefreshTimer(config.interval.helpershifts.refreshAfterHidden)
 			} else {
-				this.updateNote(this.currentNote)
+				this.stopRefreshTimer()
 			}
 		},
-		/**
-		 * Create a new note and focus the note content field automatically
-		 * The note is not yet saved, therefore an id of -1 is used until it
-		 * has been persisted in the backend
-		 */
-		newNote() {
-			if (this.currentNoteId !== -1) {
-				this.currentNoteId = -1
-				this.notes.push({
-					id: -1,
-					title: '',
-					content: '',
-				})
-				this.$nextTick(() => {
-					this.$refs.title.focus()
-				})
+
+		reloadHelpershifts() {
+			if (this.$route.path !== '/') {
+				this.$router.push('/')
 			}
+			store.commit('removeAllHelpershifts')
+			store.commit('clearSyncCache')
+			this.loading.helpershifts = true
+			this.loadHelpershifts()
 		},
-		/**
-		 * Abort creating a new note
-		 */
-		cancelNewNote() {
-			this.notes.splice(this.notes.findIndex((note) => note.id === -1), 1)
-			this.currentNoteId = null
-		},
-		/**
-		 * Create a new note by sending the information to the server
-		 * @param {Object} note Note object
-		 */
-		async createNote(note) {
-			this.updating = true
-			try {
-				const response = await axios.post(generateUrl('/apps/notestutorial/notes'), note)
-				const index = this.notes.findIndex((match) => match.id === this.currentNoteId)
-				this.$set(this.notes, index, response.data)
-				this.currentNoteId = response.data.id
-			} catch (e) {
-				console.error(e)
-				showError(t('notestutorial', 'Could not create the note'))
-			}
-			this.updating = false
-		},
-		/**
-		 * Update an existing note on the server
-		 * @param {Object} note Note object
-		 */
-		async updateNote(note) {
-			this.updating = true
-			try {
-				await axios.put(generateUrl(`/apps/notestutorial/notes/${note.id}`), note)
-			} catch (e) {
-				console.error(e)
-				showError(t('notestutorial', 'Could not update the note'))
-			}
-			this.updating = false
-		},
-		/**
-		 * Delete a note, remove it from the frontend and show a hint
-		 * @param {Object} note Note object
-		 */
-		async deleteNote(note) {
-			try {
-				await axios.delete(generateUrl(`/apps/notestutorial/notes/${note.id}`))
-				this.notes.splice(this.notes.indexOf(note), 1)
-				if (this.currentNoteId === note.id) {
-					this.currentNoteId = null
-				}
-				showSuccess(t('notestutorial', 'Note deleted'))
-			} catch (e) {
-				console.error(e)
-				showError(t('notestutorial', 'Could not delete the note'))
+
+		onClose(event) {
+			if (!this.helpershifts.every(helpershift => !helpershift.unsaved)) {
+				event.preventDefault()
+				return this.t('helpershifts', 'There are unsaved helpershifts. Leaving the page will discard all changes!')
 			}
 		},
 	},
 }
 </script>
-<style scoped>
-	#app-content > div {
-		width: 100%;
-		height: 100%;
-		padding: 20px;
-		display: flex;
-		flex-direction: column;
-		flex-grow: 1;
-	}
-
-	input[type='text'] {
-		width: 100%;
-	}
-
-	textarea {
-		flex-grow: 1;
-		width: 100%;
-	}
-</style>

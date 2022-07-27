@@ -1,5 +1,5 @@
 <?php
-namespace OCA\SlotsTutorial\Db;
+namespace OCA\Helpershifts\Db;
 
 use OCP\IDBConnection;
 use OCP\AppFramework\Db\QBMapper;

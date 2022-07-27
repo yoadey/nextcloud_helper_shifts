@@ -1,0 +1,23 @@
+@media print {
+	#header,
+	.app-navigation,
+	#helpershift-container .action-buttons {
+		display: none !important;
+	}
+
+	.content {
+		display: block;
+		padding: 0;
+		color: #000;
+	}
+
+	#helpershift-container .helpershift-editor,
+	#helpershift-container .helpershift-preview {
+		padding: 0 !important;
+		font-size: 10pt !important;
+	}
+
+	.app-content {
+		margin-left: 0 !important;
+	}
+}

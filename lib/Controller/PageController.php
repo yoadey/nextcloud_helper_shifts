@@ -1,7 +1,9 @@
 <?php
 namespace OCA\Helpershifts\Controller;
 
+use OCA\Helpershifts\AppInfo\Application;
 use OCP\IRequest;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Http\DataResponse;
 use OCP\AppFramework\Controller;
@@ -22,9 +24,18 @@ class PageController extends Controller {
 	 * @NoCSRFRequired
 	 */
 	public function index() {
-		Util::addScript(Application::APP_ID, 'notestutorial-main');
+		$devMode = false;//!is_file(dirname(__FILE__).'/../../js/helpershifts-main.js');
+		$response = new TemplateResponse(
+			$this->appName,
+			$devMode ? 'dev-mode' : 'main',
+			[ ]
+		);
 
-		return new TemplateResponse(Application::APP_ID, 'main');
+		$csp = new ContentSecurityPolicy();
+		$csp->addAllowedImageDomain('*');
+		$response->setContentSecurityPolicy($csp);
+
+		return $response;
 	}
 
 	/**

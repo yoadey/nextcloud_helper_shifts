@@ -107,7 +107,7 @@
             ]);
 
             $table->setPrimaryKey(['id']);
-            $table->addIndex(['start'], 'shift_start_index');
+            $table->addIndex(['start'], 'slot_start_index');
         }
         return $schema;
     }
